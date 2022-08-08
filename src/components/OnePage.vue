@@ -3,37 +3,44 @@
     <div class="container">
       <div v-for="good in goods" v-bind:key="'good' + good.id" class="good">
         <div class="discount" v-if="good.discount !== 0">-{{ Math.floor(good.discount) }}%</div>
+        <!-- Название и картинка -->
         <a href="#"><img :src="good.img" alt="img"></a>
         <a href="#">{{ good.title.slice(0, 43) }}{{good.title.length > 45 ? '...' : ''}}</a>
+        <!-- Цена -->
         <div class="price">
+          <!-- Цена покупки -->
          <span :class="good.discount === 0 ? 'without-real' : 'disc'">
            {{ Math.floor(good.price - (good.price * good.discount) / 100) }}
            <span class="zeros">.00 </span>
            <span class="curr">AED</span>
          </span>
+          <!-- Если есть скидка: настоящая цена -->
           <span class="real" v-if="good.discount !== 0">
            {{ good.price }}
            <span class="zeros">.00 </span>
            <span class="curr">AED</span>
          </span>
         </div>
+        <!-- Кнопки -->
         <transition-group name="good-buttons">
-          <div class="count-in-cart" v-if="cart.find(x => x.id === good.id)" key="count-in-cart">
+          <!-- Счетчик -->
+          <div class="count-in-cart" v-if="this.$store.getters.cart(good.id)" key="count-in-cart">
             <button class="add" @click="subRest(good.id)">
               <svg width="12" height="2" viewBox="0 0 12 2" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="0.75" y="0.25" width="10.5" height="1.5" fill="#366E36"/>
               </svg>
             </button>
-            <span>{{ cart.find(x => x.id === good.id) ? cart.find(x => x.id === good.id).cart : 0 }}</span>
+            <span>{{ this.$store.getters.cart(good.id).cart}}</span>
             <button class="sub"
                     @click="addRest(good.id)"
-                    :disabled="cart.find(x => x.id === good.id).cart === good.rest">
+                    :disabled="this.$store.getters.cart(good.id).cart === good.rest">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5.25001 5.25009H0.75V6.75009H5.25001V11.25H6.75001V6.75009H11.25V5.25009H6.75001V0.749977H5.25001V5.25009Z"
                       fill="#366E36"/>
               </svg>
             </button>
           </div>
+          <!-- Кнопка -->
           <button v-else
                   @click="addToCart(good)"
                   key="good-button"
@@ -41,6 +48,7 @@
                   :disabled="good.rest === 0">{{ good.rest > 0 ? 'Add to Cart' : 'Out of Stock' }}
           </button>
         </transition-group>
+        <!-- Время доставки -->
         <div class="time">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4.77717 2.72865H2.32985L2.95637 1.94159H5.40369L4.77717 2.72865ZM9.18411 2.66968C9.86747 2.28439 10.1109 1.4155 9.72742 0.728625C9.34413 0.0416888 8.47931 -0.202781 7.79577 0.18266C7.11225 0.5681 6.86891 1.4371 7.25252 2.12397C7.63581 2.81067 8.50063 3.05494 9.18408 2.66968H9.18411ZM0.626519 5.18824L0 5.97521H2.44732L3.07384 5.18816H0.626519V5.18824ZM4.13111 3.56492H1.68379L1.05727 4.35198H3.50459L4.13111 3.56492ZM11.4924 5.40814L9.82882 5.33966L8.65588 3.25082L7.83498 2.7804C7.69494 2.70704 7.20947 2.42463 6.72875 2.80875L3.6568 5.37555C3.42711 5.58888 3.28298 5.91428 3.58632 6.26473C3.79742 6.50228 4.16229 6.47991 4.38527 6.30729L6.44489 4.44549L6.1783 6.13845L4.93186 8.42401L3.10611 9.40479C2.55266 9.80858 2.77564 10.2651 2.86613 10.3916C3.00165 10.5819 3.38024 10.8545 3.82194 10.5793L6.12055 9.18078L6.99174 7.56681L8.52964 8.81453L8.43999 11.365C8.45155 11.7582 8.80059 11.9977 9.10594 12C9.50386 11.9901 9.7544 11.738 9.79098 11.3047L9.86204 9.16288C9.87284 8.75935 9.95454 8.26344 9.6573 8.00393L8.10779 6.61464L8.3886 5.18708L9.31437 6.47593L11.3623 6.57351C11.7909 6.58941 11.9822 6.27236 11.9977 6.0087C12.0288 5.69349 11.7439 5.44314 11.4924 5.40815L11.4924 5.40814Z"
@@ -57,7 +65,7 @@
 export default {
   name: 'OnePage',
   props: {
-    goods: {
+    goods: { // товары на этой странице
       type: Array,
       default: new Array([
         {
@@ -79,24 +87,12 @@ export default {
           timing: 59
         }
       ])
-    },
-    page: {
-      type: Number,
-      default: 1
-    },
-    pages: {
-      type: Number,
-      default: 9
-    }
-  },
-  data() {
-    return {
-      cart: []
     }
   },
   methods: {
+    // onClick на "Add to Cart"
     addToCart(good) {
-      let addGood = {
+      this.$store.commit('addToCart', {
         id: good.id,
         title: good.title,
         price: good.price,
@@ -104,48 +100,38 @@ export default {
         rest: good.rest,
         img: good.img,
         cart: 1
-      }
-      this.cart.push(addGood);
+      });
+      // показать сообщение
       this.$emit('popup', {
         show: true,
         img: good.img,
         head: 'You add new product!',
         text: good.title
       })
-
-      this.$store.commit('addToCart', addGood);
-
-      console.log('Add to cart: ' + good.title);
-      console.log('Cart:\n' + JSON.stringify(this.$store.state.cart));
+      console.log('Add: \n' + good.title.slice(0, 43) + '\n-------------------\nCart:\n' + this.$store.getters.cartToString);
     },
-    addRest(id) {
-      let inCart = this.cart.find(x => x.id === id);
+    addRest(id) { // нажатие на "+"
+      let inCart = this.$store.getters.cart(id);
       if(inCart && inCart.cart < inCart.rest) {
         inCart.cart++;
+        console.log(`${inCart.title.slice(0, 43)}: ${inCart.cart}`)
       }
-      this.$store.commit('changeCountInCart', id, inCart.cart);
-      console.log(`${inCart.title}: ${inCart.cart}`)
     },
-    subRest(id) {
-      let inCart = this.cart.find(x => x.id === id);
-      if (inCart && inCart.cart > 0) {
+    subRest(id) { // нажатие на "-"
+      let inCart = this.$store.getters.cart(id);
+
+      if (inCart && inCart.cart > 1) { // еще есть что вычитать
         inCart.cart--;
-        if (inCart.cart !== 0) {
-          this.$store.commit('changeCountInCart', {id: id, count: inCart.cart});
-          console.log(`${inCart.title}: ${inCart.cart}`)
-        }
-      }
-      if(inCart && inCart.cart === 0) {
-        this.$emit('popup', {
+        console.log(`${inCart.title.slice(0, 43)}: ${inCart.cart}`);
+      } else if(inCart) { // в корзине один товар - нужно удалять
+        this.$emit('popup', { // показать сообщение об удалении
           show: true,
           img: inCart.img,
-          head: 'Deleted product',
+          head: 'Delete product',
           text: inCart.title
         })
-        this.cart.splice(this.cart.indexOf(inCart), 1);
         this.$store.commit('removeFromCart', id);
-        console.log('Remove from cart: ' + inCart.title);
-        console.log('Cart:\n' + JSON.stringify(this.$store.state.cart));
+        console.log('Remove: \n' + inCart.title.slice(0, 43) + '\n-------------------\nCart:\n' + this.$store.getters.cartToString);
       }
     }
   }
